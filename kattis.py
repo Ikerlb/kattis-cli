@@ -10,6 +10,8 @@ import webbrowser
 import requests
 import requests.exceptions
 
+from collections import defaultdict
+
 import zipfile
 from pathlib import Path
 
@@ -308,8 +310,20 @@ def fetch_command(args):
         req.raise_for_status()
         with zipfile.ZipFile(io.BytesIO(req.content)) as z: 
             z.extractall(problem)
-    except:
-        print(f"Error fetching problem {problem}")
+            entries = os.listdir(problem)
+            by_ext = defaultdict(list)
+            for e in entries:
+                ext = e.rsplit(".", 1)[-1]
+                by_ext[ext].append(f"{problem}/{e}")
+            assert("in" in by_ext and "ans" in by_ext and len(by_ext["in"]) == len(by_ext["ans"]) and len(by_ext) == 2)
+            for ext, files in by_ext.items():
+                for i, f in enumerate(sorted(files), 1):
+                    tgt = f"{problem}/{i}.{ext}"
+                    os.rename(f, tgt)
+                    print(f"Succesfully renamed {f} to {tgt}")
+            
+    except Exception as e:
+        print(f"Error fetching problem {problem}: {e}")
         sys.exit(1)
     print(f"Created directory {problem} with sample files") 
     print('Open problem in browser (y/N)?')
